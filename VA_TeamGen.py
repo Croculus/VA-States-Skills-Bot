@@ -9,6 +9,7 @@ class Team():
 
     def __str__(self) -> str:
         return "Num: {}, Name: {}, Id:{}\n".format(self.number, self.name, str(self.id))
+    
         
 
 def response_handler(response, i):
@@ -23,15 +24,18 @@ header = {
     'Authorization': 'Bearer '+token,
     'accept':'application/json'
            }
-for i in range(1,30):
-    print('page:{}'.format(str(i)))
-    response = requests.get('https://www.robotevents.com/api/v2/teams?registered=true&program%5B%5D=1&grade%5B%5D=High%20School&country%5B%5D=US&myTeams=false&per_page=250&page={}'.format(str(i)), headers=header)
-    response = response.json()
-    for i in range(len(response['data'])):
-     is_VA(next(response_handler(response, i)))
 
-file = open('teams.txt', 'w')
-for i in teams:
-    print(str(i))
-    file.write(str(i))
-file.close()
+
+if __name__ == '__main__':  
+    for i in range(1,30):
+        print('page:{}'.format(str(i)))
+        response = requests.get('https://www.robotevents.com/api/v2/teams?registered=true&program%5B%5D=1&grade%5B%5D=High%20School&country%5B%5D=US&myTeams=false&per_page=250&page={}'.format(str(i)), headers=header)
+        response = response.json()
+        for i in range(len(response['data'])):
+            is_VA(next(response_handler(response, i)))
+
+    file = open('teams.txt', 'w')
+    for i in teams:
+        print(str(i))
+        file.write(str(i))
+    file.close()
