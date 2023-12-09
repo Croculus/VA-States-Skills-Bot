@@ -37,7 +37,7 @@ def parser(file):
     f.close()
 
 def isQualified():
-    response = requests.get('https://www.robotevents.com/api/v2/events/53761/teams', params=params, headers=header)
+    response = requests.get('https://www.robotevents.com/api/v2/events/53761/teams', params=params, headers=header) #pulling teams from virginia state championship
     response = response.json()
     for team1 in response['data']:
         for team2 in teams:
@@ -48,8 +48,11 @@ def isQualified():
 
 def populate(team: Team):
     response = requests.get('https://www.robotevents.com/api/v2/teams/{}/skills'.format(team.id), params=params, headers=header)
+    print(response.text)
+    time.sleep(1)
     response = response.json()
     data = response['data']
+    
     event_id = None
     try:
         for run in data:
