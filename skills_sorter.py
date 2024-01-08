@@ -26,30 +26,38 @@ class Team():
         self.qualified = bool
         self.events = [int]
     
-    def getSkillsScore(self, data) -> None:
-        driver_runs = []
-        auto_runs = []
-        skills_scores =[int, str]
-        for skills_run in data: #sort data into types of runs 
-            if skills_run['type'] == 'driver':
-                skills_run.append(driver_runs)
-            else:
-                skills_run.append(auto_runs)
+    def generateEvents(self, data) -> None:
+        highest_total = 0
+        for i in range(len(data)): #sort data into types of runs 
+            skills_run = data[i]
+            next_run = data[i+1]
 
+            #event vars
+            driver= 0
+            auto = 0
+            total = 0
+
+            if skills_run['type'] == 'driver': #check for a driver run
+                driver = skills_run['score']
+                total = driver
+                if next_run['type'] == 'programming' and skills_run['event']['id'] == next_run['event']['id']: #works under the assumption that the corresponding auto run will always be ahead of the skills
+                    auto = next_run['score']
+                    
+
+            else:
+                auto = skills_run['score']
+                total = auto
+            
+            if total > highest_total:
+                self.driver = driver
+                self.auto = auto
+                self.score = total 
+  
 
 
     def toSheets(self) -> [str, str, int, int, int, bool]:
         return [self.name, self.number, self.score, self.driver, self.auto, self.qualified] 
 
-class Event():
-    def init(self, id):
-        self.id = id
-        self.driver = 0
-        self.auto = 0
-    
-    def scores(self) -> tuple(int, int, int):
-        return self.driver, self.auto, self.driver+self.auto
-    
 
 teams = [Team]
 qualified  = [Team]
@@ -62,8 +70,6 @@ def parser(file):
         id = re.search(r'Id:\s*([0-9]+)', line).group(1)
         team = Team(num, name, id)
         teams.append(team)
-        populate(team)
-    isQualified()
     f.close()
 
 def isQualified():
@@ -80,14 +86,9 @@ def isQualified():
 def populate(team: Team):
     response = requests.get('https://www.robotevents.com/api/v2/teams/{}/skills'.format(team.id), params=params, headers=header)
     print(response.text)
-    time.sleep(1)
     response = response.json()
     data = response['data']
     
-    event_id = None
-    try:
-        for run in data:
-            run
         #  ~~  program design decision comment  ~~
         # So right now there are a couple ways I could try to find the highest total skill score for a team
         # Since the total skills score is the sum of the auto + driver at a single event, and given the way that runs of both types are indexed in the list within the API, I could either
@@ -95,12 +96,11 @@ def populate(team: Team):
         # B: Add all the runs to the class function and make a function that sorts it
         # C: Record each event for every team (which I was going to do later so I could update more frequently when events are live) and dig for skills score 
 
-  
+        #decided to go with A b/c of least amount of calls and comparisons
+    
+    try:
+        pass
     except:
         print('Something went wrong when trying to write to team {}'.format(team.number))
 
 
-
-
-
-parser('teams.txt')
