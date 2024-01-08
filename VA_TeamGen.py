@@ -35,20 +35,8 @@ if __name__ == '__main__':
             is_VA(next(response_handler(response, i)))
 
     file = open('teams.txt', 'w')
-    database = sqlite3.connect("skills_bot.database")
-
-    cursor = database.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS teams (
-        number TEXT,
-        name TEXT, 
-        id INT,  
-    
-    """)
-    database.commit()
+ 
     for i in teams:
         print(str(i))
-        response = cursor.execute("INSERT INTO accounts VALUES (?, ?, ?, FALSE, )", (i.number, i.name, i.id))
-        database.commit()
         file.write(str(i))
     file.close()

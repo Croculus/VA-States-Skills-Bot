@@ -1,28 +1,58 @@
-import VA_TeamGen, requests, re, dotenv, time
+import requests, re, dotenv, datetime
 
 
 
 
-token =dotenv.get_key('.env','TOKEN')
+token =dotenv.get_key('.env','TOKEN') #enviroment virable for token
+
+#headers/parameters to access api
 header = {
     'Authorization': 'Bearer '+token,
     'accept':'application/json'
            }
-params = {'season[]' : 181}
+params = {'season[]' : 181} #season = Over Under
 
-class Team(VA_TeamGen.Team):
+
+reset_time = datetime.datetime.now()
+
+class Team():
     def __init__(self, number, name, id) -> None:
-        super().__init__(number, name, id)
+        self.name = name
+        self.number = number
+        self.id = id
         self.driver = 0
         self.auto = 0
-        self.skills = self.driver + self.auto #combined total of driver and auto
+        self.score = self.driver + self.auto #combined total of driver and auto
         self.qualified = bool
-        self.events = []
+        self.events = [int]
+    
+    def getSkillsScore(self, data) -> None:
+        driver_runs = []
+        auto_runs = []
+        skills_scores =[int, str]
+        for skills_run in data: #sort data into types of runs 
+            if skills_run['type'] == 'driver':
+                skills_run.append(driver_runs)
+            else:
+                skills_run.append(auto_runs)
 
+
+
+    def toSheets(self) -> [str, str, int, int, int, bool]:
+        return [self.name, self.number, self.score, self.driver, self.auto, self.qualified] 
+
+class Event():
+    def init(self, id):
+        self.id = id
+        self.driver = 0
+        self.auto = 0
     
+    def scores(self) -> tuple(int, int, int):
+        return self.driver, self.auto, self.driver+self.auto
     
-spots = 56
+
 teams = [Team]
+qualified  = [Team]
 
 def parser(file):
     f = open(file, 'r')
@@ -44,6 +74,7 @@ def isQualified():
             if team1['id'] == team2.id:
                 team2.qualified = True
                 print(team2)
+                qualified.append(team2)
                 
 
 def populate(team: Team):
