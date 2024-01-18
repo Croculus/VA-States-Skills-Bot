@@ -1,4 +1,4 @@
-import requests, re, dotenv, datetime
+import requests, re, dotenv, datetime, time, json
 
 
 
@@ -16,21 +16,23 @@ params = {'season[]' : 181} #season = Over Under
 reset_time = datetime.datetime.now()
 
 class Team():
-    def __init__(self, number, name, id) -> None:
+    def __init__(self, number, name, id, qualified) -> None:
         self.name = name
         self.number = number
         self.id = id
         self.driver = 0
         self.auto = 0
         self.score = self.driver + self.auto #combined total of driver and auto
-        self.qualified = bool
-        self.events = [int]
+        self.qualified = qualified
     
-    def generateEvents(self, data) -> None:
+    def findSkillsScore(self, data) -> None:
         highest_total = 0
         for i in range(len(data)): #sort data into types of runs 
             skills_run = data[i]
-            next_run = data[i+1]
+            try:
+                next_run = data[i+1]
+            except:
+                next_run = None
 
             #event vars
             driver= 0
@@ -42,6 +44,8 @@ class Team():
                 total = driver
                 if next_run['type'] == 'programming' and skills_run['event']['id'] == next_run['event']['id']: #works under the assumption that the corresponding auto run will always be ahead of the skills
                     auto = next_run['score']
+                    total+= auto
+                    #iterate over the next program
                     
 
             else:
@@ -49,42 +53,48 @@ class Team():
                 total = auto
             
             if total > highest_total:
+                highest_total = total
                 self.driver = driver
                 self.auto = auto
                 self.score = total 
-  
 
+    def getId(self) -> int:
+        return self.id
 
     def toSheets(self) -> [str, str, int, int, int, bool]:
-        return [self.name, self.number, self.score, self.driver, self.auto, self.qualified] 
+        return [self.name, self.number, self.score, self.driver, self.auto, str(self.qualified)] 
 
 
-teams = [Team]
+teams = []
 qualified  = [Team]
 
 def parser(file):
+    loadQualified()
     f = open(file, 'r')
     for line in f.readlines():
         num = re.search(r'[0-9]+[A-Z]', line).group(0)
         name = re.search(r'Name:\s*([^,]+)[^a-zA-Z0-9]', line).group(1)
         id = re.search(r'Id:\s*([0-9]+)', line).group(1)
-        team = Team(num, name, id)
+        team = Team(num, name, id, isQualified(id))
         teams.append(team)
     f.close()
 
-def isQualified():
+def isQualified(id) -> bool: #helper function for determining who already qualified   
+    for qualifiedId in qualified:
+        if int(id) == qualifiedId:
+            return True
+    return False
+
+qualified = []
+def loadQualified(): # helper for my helper function
     response = requests.get('https://www.robotevents.com/api/v2/events/53761/teams', params=params, headers=header) #pulling teams from virginia state championship
     response = response.json()
-    for team1 in response['data']:
-        for team2 in teams:
-            if team1['id'] == team2.id:
-                team2.qualified = True
-                print(team2)
-                qualified.append(team2)
-                
+    for team in response['data']:
+        qualified.append(team['id'])
+
 
 def populate(team: Team):
-    response = requests.get('https://www.robotevents.com/api/v2/teams/{}/skills'.format(team.id), params=params, headers=header)
+    response = requests.get('https://www.robotevents.com/api/v2/teams/{}/skills'.format(team.getId()), params=params, headers=header)
     print(response.text)
     response = response.json()
     data = response['data']
@@ -104,3 +114,20 @@ def populate(team: Team):
         print('Something went wrong when trying to write to team {}'.format(team.number))
 
 
+if __name__ == '__main__': # run this every 24 hrs
+    parser('teams.txt')
+    for team in teams:
+        rate_limited = True
+        while(rate_limited): # helps with rate limitation
+            try:
+                response = requests.get('https://www.robotevents.com/api/v2/teams/{}/skills'.format(team.getId()), params=params, headers=header)
+                response = response.json()
+                team.findSkillsScore(data=response['data'])
+                print(team.toSheets())
+                rate_limited = False
+            except: # once rate limited, wait a bit before pulling more
+                time.sleep(5)
+                continue
+    temp = [team.toSheets() for team in teams]
+    json.dumps(temp, indent= 4)
+    print('done')

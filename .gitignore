@@ -2,4 +2,4 @@ teams.txt
 __pycache__/VA_TeamGen.cpython-39.pyc
 .ENV
 __pycache__/VA_TeamGen.cpython-311.pyc
-.vscode/settings.json
+*.json
