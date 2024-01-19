@@ -5,6 +5,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from skills_sorter import sendTeams, teams
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -15,6 +16,7 @@ SAMPLE_RANGE_NAME = "Sheet1!A2:E"
 
 
 def main():
+  data, spots_left = sendTeams()
   creds = None
   # The file token.json stores the user's access and refresh tokens, and is
   # created automatically when the authorization flow completes for the first
@@ -41,19 +43,14 @@ def main():
     sheet = service.spreadsheets()
     result = (
         sheet.values()
-        .update(spreadsheetId=SAMPLE_SPREADSHEET_ID, range=SAMPLE_RANGE_NAME)
+        .update(
+          spreadsheetId=SAMPLE_SPREADSHEET_ID, 
+          range=SAMPLE_RANGE_NAME, 
+          valueInputOption='RAW', 
+          body =data )
         .execute()
     )
-    values = result.get("values", [])
-
-    if not values:
-      print("No data found.")
-      return
-
-    print("Name, Major:")
-    for row in values:
-      # Print columns A and E, which correspond to indices 0 and 4.
-      print(f"{row[0]}, {row[4]}")
+    print('done')
   except HttpError as err:
     print(err)
 

@@ -84,7 +84,6 @@ def isQualified(id) -> bool: #helper function for determining who already qualif
         if int(id) == qualifiedId:
             return True
     return False
-
 qualified = []
 def loadQualified(): # helper for my helper function
     response = requests.get('https://www.robotevents.com/api/v2/events/53761/teams', params=params, headers=header) #pulling teams from virginia state championship
@@ -92,29 +91,11 @@ def loadQualified(): # helper for my helper function
     for team in response['data']:
         qualified.append(team['id'])
 
-
-def populate(team: Team):
-    response = requests.get('https://www.robotevents.com/api/v2/teams/{}/skills'.format(team.getId()), params=params, headers=header)
-    print(response.text)
-    response = response.json()
-    data = response['data']
-    
-        #  ~~  program design decision comment  ~~
-        # So right now there are a couple ways I could try to find the highest total skill score for a team
-        # Since the total skills score is the sum of the auto + driver at a single event, and given the way that runs of both types are indexed in the list within the API, I could either
-        # A: Try to match each auto run with a driver run for that same event, then compare to other event pairs and add (all in this function)
-        # B: Add all the runs to the class function and make a function that sorts it
-        # C: Record each event for every team (which I was going to do later so I could update more frequently when events are live) and dig for skills score 
-
-        #decided to go with A b/c of least amount of calls and comparisons
-    
-    try:
-        pass
-    except:
-        print('Something went wrong when trying to write to team {}'.format(team.number))
+def sortHelper(team):
+    return team[2] #total skills score of team
 
 
-if __name__ == '__main__': # run this every 24 hrs
+def sendTeams():
     parser('teams.txt')
     for team in teams:
         rate_limited = True
@@ -129,5 +110,8 @@ if __name__ == '__main__': # run this every 24 hrs
                 time.sleep(5)
                 continue
     temp = [team.toSheets() for team in teams]
-    json.dumps(temp, indent= 4)
-    print('done')
+    temp.sort(reverse= True, key=sortHelper)
+    return (json.dumps(temp, indent= 4), 56-len(qualified))
+
+if __name__ == '__main__': # run this every 24 hrs
+    sendTeams()
